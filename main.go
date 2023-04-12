@@ -18,10 +18,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"willvelida/recipes-api/handlers"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -37,22 +39,15 @@ func init() {
 	}
 	log.Println("Connected to MongoDB")
 	collection := client.Database("demo").Collection("recipes")
-	/* LOADING THE JSON FILE INTO MONGO DB
-		recipes = make([]Recipe, 0)
-	file, _ := ioutil.ReadFile("recipes.json")
-	_ = json.Unmarshal([]byte(file), &recipes)
-	var listOfRecipes []interface{}
-	for _, recipe := range recipes {
-		listOfRecipes = append(listOfRecipes, recipe)
-	}
-	collection := client.Database("demo").Collection("recipes")
-	insertManyResult, err := collection.InsertMany(ctx, listOfRecipes)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("Inserted recipes: ", len(insertManyResult.InsertedIDs))
-	*/
-	recipesHandler = handlers.NewRecipesHandler(ctx, collection)
+
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "",
+		DB:       0,
+	})
+	status := redisClient.Ping()
+	fmt.Println(status)
+	recipesHandler = handlers.NewRecipesHandler(ctx, collection, redisClient)
 }
 
 func main() {
